@@ -7,6 +7,7 @@ export const useLivestackStore = defineStore('livestackStore', {
     availableImages: [],
     availableTargets: [],
     availableFilters: [],
+    histogramSettings: [],
     selectedFilter: null,
     selectedTarget: null,
     currentImageTarget: null,
@@ -60,6 +61,14 @@ export const useLivestackStore = defineStore('livestackStore', {
         });
       return Array.from(filtersMap.values()).toSorted((a, b) => a.label.localeCompare(b.label));
     },
+
+    getHistogramSettings(state) {
+      (targetLabel, filterLabel) => {
+        return state.histogramSettings.find(
+          (s) => s.target === targetLabel && s.filter === filterLabel
+        );
+      };
+    },
   },
   actions: {
     setShowFilters(show) {
@@ -78,6 +87,35 @@ export const useLivestackStore = defineStore('livestackStore', {
         settingsStore.livestack = { showFilters: true, isTrackingStacks: true };
       }
       settingsStore.livestack.isTrackingStacks = track;
+    },
+
+    setHistogramSettings(targetLabel, filterLabel, blackPoint, whitePoint, midPoint) {
+      let setting = this.histogramSettings.find(
+        (s) => s.target === targetLabel && s.filter === filterLabel
+      );
+      if (!setting) {
+        setting = {
+          target: targetLabel,
+          filter: filterLabel,
+          blackPoint: blackPoint,
+          whitePoint: whitePoint,
+          midPoint: midPoint,
+        };
+        this.histogramSettings.push(setting);
+      } else {
+        setting.blackPoint = blackPoint;
+        setting.whitePoint = whitePoint;
+        setting.midPoint = midPoint;
+      }
+    },
+
+    resetHistogramSettings(targetLabel, filterLabel) {
+      const setting = this.getHistogramSettings(targetLabel, filterLabel);
+      if (setting) {
+        setting.blackPoint = 0;
+        setting.whitePoint = 255;
+        setting.midPoint = 127;
+      }
     },
 
     selectTarget(targetLabel) {

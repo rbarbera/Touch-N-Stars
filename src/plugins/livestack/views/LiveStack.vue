@@ -202,12 +202,31 @@ const loadImage = async (target, filter, forceReload = false) => {
       scale
     );
 
+    // If we have a previous strech setting for this target/filter, re-apply it
+    const stretchSettings = livestackStore.getHistogramSettings(targetLabel, filterLabel);
+    if (stretchSettings) {
+      await histogramStore.calculateHistogramForImage(newImageUrl);
+      await histogramStore.applyStretch(
+        newImageUrl,
+        settings.blackPoint,
+        settings.whitePoint,
+        settings.midPoint
+      );
+    }
+
     // Only update the image URL after successful load
     livestackStore.setCurrentImageUrl(newImageUrl, targetLabel, filterLabel);
     lastUpdated.value = new Date().toLocaleTimeString();
 
+    if (!stretchSettings) {
+      // Calculate histogram for the new image
+      await histogramStore.calculateHistogramForImage(newImageUrl);
+    }
+
     // Calculate histogram for the new image
-    await histogramStore.calculateHistogramForImage(newImageUrl);
+    const settings = histogramStore.getHistogramSettings(targetLabel, filterLabel);
+    if (settings) {
+    }
   } catch (error) {
     console.error('Error loading image:', error);
     errorMessage.value = t('plugins.livestack.errors.loading_image', { message: error.message });
@@ -264,11 +283,22 @@ const onLevelsChanged = async (event) => {
     whitePoint,
     midPoint
   );
+  livestackStore.setHistogramSettings(
+    livestackStore.selectedTarget?.label,
+    livestackStore.selectedFilter?.label,
+    blackPoint,
+    whitePoint,
+    midPoint
+  );
 };
 
 const onLevelsReset = () => {
   if (!livestackStore.currentImageUrl) return;
   histogramStore.resetStretch(livestackStore.currentImageUrl);
+  livestackStore.resetHistogramSettings(
+    livestackStore.selectedTarget?.label,
+    livestackStore.selectedFilter?.label
+  );
 };
 
 // WebSocket handlers
